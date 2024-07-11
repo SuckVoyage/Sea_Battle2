@@ -1,6 +1,7 @@
 ﻿// Sea_Battle2.cpp : Этот файл содержит функцию "main". Здесь начинается и заканчивается выполнение программы.
 //
 #include <iostream>
+#include <ctime>
 short box_size = 10;
 short Line = 33;
 void print_line() {
@@ -23,57 +24,70 @@ short Transformation(char z) {
     if (z == 'j' || z == 'J') return 9;
     else return -1;
 }
+struct Coord{
+    short x;
+    short y;
+};
 
 class Ships {
 protected:
-    bool* Ship;
-    short Size;
-    bool Condition;
+    bool* ship;
+    Coord start;
+    Coord end;
+    short size;
+    bool condition;
 public:
     Ships(short Size) {
-        this->Size = Size;
-        Ship = new bool[this->Size];
-        Condition = true;
-        for (short i = 0; i < this->Size; i++) {
-            Ship[i] = false;
+        this->size = Size;
+        ship = new bool[this->size];
+        condition = true;
+        start.x = 0;
+        start.y = 0;
+        end.x = 0;
+        end.y = 0;
+        for (short i = 0; i < this->size; i++) {
+            ship[i] = false;
         }
-        std::cout << "Ship " << this->Size << " deck created" << std::endl;
+        std::cout << "Ship " << this->size << " deck created" << std::endl;
     }
     short get_size() {
-        return Size;
+        return size;
     }
     bool* adress(short i) {
-        return &Ship[i];
+        return &ship[i];
+    }
+    void set_start(short x, short y) {
+        start.x = x;
+        start.y = y;
+    }
+    void set_end(short x, short y) {
+        end.x = x;
+        end.y = y;
     }
     ~Ships() {
-        delete[] Ship;
+        delete[] ship;
     }
+};
+
+struct Ship_complect {
+    Ships Four_D = Ships(4);
+    Ships Three_D_1 = Ships(3);
+    Ships Three_D_2 = Ships(3);
+    Ships Two_D_1 = Ships(2);
+    Ships Two_D_2 = Ships(2);
+    Ships Two_D_3 = Ships(2);
+    Ships Single_D_1 = Ships(1);
+    Ships Single_D_2 = Ships(1);
+    Ships Single_D_3 = Ships(1);
+    Ships Single_D_4 = Ships(1);
 };
 
 class Sea_Battle {
 private:
     bool*** Player_box;
     bool*** Comp_box;
-    Ships Four_D_P = Ships(4);
-    Ships Four_D_C = Ships(4);
-    Ships Three_D_P1 = Ships(3);
-    Ships Three_D_P2 = Ships(3);
-    Ships Three_D_C1 = Ships(3);
-    Ships Three_D_C2 = Ships(3);
-    Ships Two_D_P1 = Ships(2);
-    Ships Two_D_P2 = Ships(2);
-    Ships Two_D_P3 = Ships(2);
-    Ships Two_D_C1 = Ships(2);
-    Ships Two_D_C2 = Ships(2);
-    Ships Two_D_C3 = Ships(2);
-    Ships Single_D_P1 = Ships(1);
-    Ships Single_D_P2 = Ships(1);
-    Ships Single_D_P3 = Ships(1);
-    Ships Single_D_P4 = Ships(1);
-    Ships Single_D_C1 = Ships(1);
-    Ships Single_D_C2 = Ships(1);
-    Ships Single_D_C3 = Ships(1);
-    Ships Single_D_C4 = Ships(1);
+    Ship_complect player;
+    Ship_complect computer;
 public:
     Sea_Battle() {
         Player_box = new bool** [box_size];
@@ -89,7 +103,18 @@ public:
             }
         }
     }
-
+    Ship_complect* Get_complect_comp() {
+        return &computer;
+    }
+    Ship_complect* Get_complect_pl() {
+        return &player;
+    }
+    bool*** Get_pl_box() {
+        return Player_box;
+    }
+    bool*** Get_comp_box() {
+        return Comp_box;
+    }
     void box_out() {
         print_line();
         std::cout << "|||A |B |C |D |E |F |G |H |I |J |\n";
@@ -109,11 +134,11 @@ public:
         }
     }
 
-    bool check_first(short x, short y, bool* object) {
+    bool check_first(short x, short y, bool* object, bool*** box) {
         if (x == 0 && y == 0) {
             for (short i = x; i < x + 2; i++) {
                 for (short j = y; j < y + 2; j++) {
-                    if (Player_box[i][j] != nullptr && Player_box[i][j] != object) {
+                    if (box[i][j] != nullptr && box[i][j] != object) {
                         return false;
                     }
                 }
@@ -123,7 +148,7 @@ public:
         if (x == 0 && y == 9) {
             for (short i = x; i < x + 2; i++) {
                 for (short j = y - 1; j < y + 1; j++) {
-                    if (Player_box[i][j] != nullptr && Player_box[i][j] != object) {
+                    if (box[i][j] != nullptr && box[i][j] != object) {
                         return false;
                     }
                 }
@@ -133,7 +158,7 @@ public:
         if (x == 9 && y == 0) {
             for (short i = x - 1; i < x + 1; i++) {
                 for (short j = y; j < y + 2; j++) {
-                    if (Player_box[i][j] != nullptr && Player_box[i][j] != object) {
+                    if (box[i][j] != nullptr && box[i][j] != object) {
                         return false;
                     }
                 }
@@ -143,7 +168,7 @@ public:
         if (x == 9 && y == 9) {
             for (short i = x - 1; i < x + 1; i++) {
                 for (short j = y - 1; j < y + 1; j++) {
-                    if (Player_box[i][j] != nullptr && Player_box[i][j] != object) {
+                    if (box[i][j] != nullptr && box[i][j] != object) {
                         return false;
                     }
                 }
@@ -153,7 +178,7 @@ public:
         if (x == 0) {
             for (short i = x; i < x + 2; i++) {
                 for (short j = y - 1; j < y + 2; j++) {
-                    if (Player_box[i][j] != nullptr && Player_box[i][j] != object) {
+                    if (box[i][j] != nullptr && box[i][j] != object) {
                         return false;
                     }
                 }
@@ -163,7 +188,7 @@ public:
         if (x == 9) {
             for (short i = x - 1; i < x + 1; i++) {
                 for (short j = y - 1; j < y + 2; j++) {
-                    if (Player_box[i][j] != nullptr && Player_box[i][j] != object) {
+                    if (box[i][j] != nullptr && box[i][j] != object) {
                         return false;
                     }
                 }
@@ -173,7 +198,7 @@ public:
         if (y == 0) {
             for (short i = x - 1; i < x + 2; i++) {
                 for (short j = y; j < y + 2; j++) {
-                    if (Player_box[i][j] != nullptr && Player_box[i][j] != object) {
+                    if (box[i][j] != nullptr && box[i][j] != object) {
                         return false;
                     }
                 }
@@ -183,7 +208,7 @@ public:
         if (y == 9) {
             for (short i = x - 1; i < x + 2; i++) {
                 for (short j = y - 1; j < y + 1; j++) {
-                    if (Player_box[i][j] != nullptr && Player_box[i][j] != object) {
+                    if (box[i][j] != nullptr && box[i][j] != object) {
                         return false;
                     }
                 }
@@ -193,7 +218,7 @@ public:
         else {
             for (short i = x - 1; i < x + 2; i++) {
                 for (short j = y - 1; j < y + 2; j++) {
-                    if (Player_box[i][j] != nullptr && Player_box[i][j] != object) {
+                    if (box[i][j] != nullptr && box[i][j] != object) {
                         return false;
                     }
                 }
@@ -201,7 +226,7 @@ public:
             return true;
         }
     }
-    void check_up(short x, short y, bool* object, short size, bool* side) {
+    void check_down(short x, short y, bool* object, short size, bool* side, bool*** box) {
         short steps = size - 1;
         if (x + steps > 9) {
             *side = false;
@@ -209,8 +234,8 @@ public:
         }
         else {
 
-            for (short i = x + 1; i < x + size; i++) {
-                if (!check_first(i, y, object)) {
+            for (short i = x; i < x + size; i++) {
+                if (!check_first(i, y, object, box)) {
                     *side = false;
                     return;
                 }
@@ -221,7 +246,7 @@ public:
         }
     }
 
-    void check_down(short x, short y, bool* object, short size, bool* side) {
+    void check_up(short x, short y, bool* object, short size, bool* side, bool*** box) {
         short steps = size - 1;
         if (x - steps < 0) {
             *side = false;
@@ -229,8 +254,8 @@ public:
         }
         else {
 
-            for (short i = x - 1; i < x - size; i--) {
-                if (!check_first(i, y, object)) {
+            for (short i = x; i > x - size; i--) {
+                if (!check_first(i, y, object, box)) {
                     *side = false;
                     return;
                 }
@@ -241,16 +266,16 @@ public:
         }
     }
 
-    void check_right(short x, short y, bool* object, short size, bool* side) {
+    void check_right(short x, short y, bool* object, short size, bool* side, bool*** box) {
         short steps = size - 1;
         if (y + steps > 9) {
-            side = false;
+            *side = false;
             return;
         }
         else {
 
-            for (short i = y + 1; i < y + size; i++) {
-                if (!check_first(x, i, object)) {
+            for (short i = y; i < y + size; i++) {
+                if (!check_first(x, i, object, box)) {
                     *side = false;
                     return;
                 }
@@ -261,36 +286,115 @@ public:
         }
     }
 
-    void check_left(short x, short y, bool* object, short size, bool* ) {
+    void check_left(short x, short y, bool* object, short size, bool* side, bool*** box) {
         short steps = size - 1;
         if (y - steps < 0) {
-            return false;
+            *side = false;
+            return;
         }
         else {
-
-            for (short i = y - 1; i < y - size; i--) {
-                if (!check_first(x, i, object)) {
-                    return false;
+            for (short i = y; i > y - size; i--) {
+                if (!check_first(x, i, object, box)) {
+                    *side = false;
+                    return;
                 }
-            }
-            return true;
+                else {
+                    *side = true;
+                }
+            }        
         }
     }
+    void Check_sides(short x, short y, bool* object, short size, bool* up, bool* down, bool* left, bool *right, bool*** box) {
+        if (size == 1) {
+            check_up(x, y, object, size, up, box);
+            return;
+        }
+        check_up(x, y, object, size, up, box);
+        check_down(x, y, object, size, down, box);
+        check_left(x, y, object, size, left, box);
+        check_right(x, y, object, size, right, box);
+    }
 
+    void Menu_placement(bool up, bool down, bool right, bool left) {
+        setlocale(LC_ALL, "Russian");
+        std::cout << "Выберите направление:\n";
+        {
+            if (up) {
+                std::cout << "1 - вверх\n";
+            }
+            else {
+                std::cout << "1 - недоступно\n";
+            }
+        }
+        {
+            if (down) {
+                std::cout << "2 - вниз\n";
+            }
+            else {
+                std::cout << "2 - недоступно\n";
+            }
+        }
+        {
+            if (left) {
+                std::cout << "3 - влево\n";
+            }
+            else {
+                std::cout << "3 - недоступно\n";
+            }
+        }
+        {
+            if (right) {
+                std::cout << "4 - вправо\n";
+            }
+            else {
+                std::cout << "4 - недоступно\n";
+            }
+        }
+        std::cout << "- ";
+    }
+    void Placement_P(short x, short y, short size, Ships* object, short choice, bool *** box) {
+        switch (choice) {
+        case 1:
+            for (int i = 1; i < size; i++) {
+                box[x - i][y] = object->adress(i);
+                object->set_end(x - i, y);
+            }
+            break;
+        case 2:
+            for (int i = 1; i < size; i++) {
+                box[x + i][y] = object->adress(i);
+                object->set_end(x + i, y);
+            }
+            break;
+        case 3:
+            for (int i = 1; i < size; i++) {
+                box[x][y - i] = object->adress(i);
+                object->set_end(x, y - i);
+            }
+            break;
+        case 4:
+            for (int i = 1; i < size; i++) {
+                box[x][y + i] = object->adress(i);
+                object->set_end(x, y + i);
+            }
+            break;
+        }
+    }
+    
     void  Placement() {
         setlocale(LC_ALL, "Russian");
         bool up = false;
         bool down = false;
         bool right = false;
         bool left = false;
-        /*bool* up_ref = &up;
+        bool* up_ref = &up;
         bool* down_ref = &down;
         bool* right_ref = &right;
-        bool* left_ref = &left;*/
+        bool* left_ref = &left;
         short x = 0, y = 0;
         char z = ' ';
-        char Ch = ' ';
-        std::cout << "Установите четырех палубный корабль:\nВведите букву A - J - ";
+        short Ch = 0;
+        std::cout << "Установите четырехпалубный корабль:\nВведите букву A - J - ";
         std::cin >> z;
         y = Transformation(z);
         if (y == -1) {
@@ -302,36 +406,20 @@ public:
         }
         std::cout << "Введите цифру 0 - 9 - ";
         std::cin >> x;
-        Player_box[x][y] = Four_D_P.adress(0);
-        check_up(x, y, Four_D_P.adress(0), Four_D_P.get_size(), &up);
-        check_down(x, y, Four_D_P.adress(0), Four_D_P.get_size(), &down);
-        check_left(x, y, Four_D_P.adress(0), Four_D_P.get_size(), &left);
-        if (Ch == 'N' || Ch == 'n') {
-            if (x < 7) {
-                Player_box[x + 1][y] = Four_D_P.adress(1);
-                Player_box[x + 2][y] = Four_D_P.adress(2);
-                Player_box[x + 3][y] = Four_D_P.adress(3);
-            }
-            else {
-                Player_box[x - 1][y] = Four_D_P.adress(1);
-                Player_box[x - 2][y] = Four_D_P.adress(2);
-                Player_box[x - 3][y] = Four_D_P.adress(3);
+        player.Four_D.set_start(x, y);
+        Player_box[x][y] = player.Four_D.adress(0);
+        Check_sides(x, y, player.Four_D.adress(0), player.Four_D.get_size(), up_ref, down_ref, left_ref, right_ref, Player_box);
+        Menu_placement(up, down, right, left);
+        std::cin >> Ch;
+        if ((!up && Ch == 1) || (!down && Ch == 2) || (!left && Ch == 3) || (!right && Ch == 4) || Ch < 1 || Ch > 4) {
+            while ((!up && Ch == 1) || (!down && Ch == 2) || (!left && Ch == 3) || (!right && Ch == 4) || Ch < 1 || Ch > 4) {
+                std::cout << "Неверное направление\n- ";
+                std::cin >> Ch;
             }
         }
-        if (Ch == 'Y' || Ch == 'y') {
-            if (y < 7) {
-                Player_box[x][y + 1] = Four_D_P.adress(1);
-                Player_box[x][y + 2] = Four_D_P.adress(2);
-                Player_box[x][y + 3] = Four_D_P.adress(3);
-            }
-            else {
-                Player_box[x][y - 1] = Four_D_P.adress(1);
-                Player_box[x][y - 2] = Four_D_P.adress(2);
-                Player_box[x][y - 3] = Four_D_P.adress(3);
-            }
-        }
+        Placement_P(x, y, player.Four_D.get_size(), &player.Four_D, Ch, Player_box);
         box_out();
-        std::cout << "Установите первый трех палубный корабль:\nВведите букву A - J - ";
+        std::cout << "Установите первый трехпалубный корабль:\nВведите букву A - J - ";
         std::cin >> z;
         y = Transformation(z);
         if (y == -1) {
@@ -343,62 +431,543 @@ public:
         }
         std::cout << "Введите цифру 0 - 9 - ";
         std::cin >> x;
-        if (!check(x, y, Three_D_P1.adress(0))) {
-            while (!check(x, y, Three_D_P1.adress(0))) {
-                std::cout << "Поле недоступно.\n";
-                std::cout << "Установите первый трех палубный корабль:\nВведите букву A - J - ";
+        Check_sides(x, y, player.Three_D_1.adress(0), player.Three_D_1.get_size(), up_ref, down_ref, left_ref, right_ref, Player_box);
+        if (!up && !down && !right && !left) {
+            while (!up && !down && !right && !left) {
+                std::cout << "Невозможно установить корабль!\nВведите букву A - J - ";
                 std::cin >> z;
                 y = Transformation(z);
-                if (y == -1) {
-                    while (y == -1) {
-                        std::cout << "Неверный ввод.\nВведите букву A - J - ";
-                        std::cin >> z;
-                        y = Transformation(z);
-                    }
-                }
                 std::cout << "Введите цифру 0 - 9 - ";
                 std::cin >> x;
+                Check_sides(x, y, player.Three_D_1.adress(0), player.Three_D_1.get_size(), up_ref, down_ref, left_ref, right_ref, Player_box);
             }
         }
-        Player_box[x][y] = Three_D_P1.adress(0);
-        std::cout << "Установить по горизонтали?\nY - N - ";
+        player.Three_D_1.set_start(x, y);
+        Player_box[x][y] = player.Three_D_1.adress(0);
+        Menu_placement(up, down, right, left);
         std::cin >> Ch;
-        if (Ch == 'N' || Ch == 'n') {
-            if (x < 8) {
-                if (check(x + 1, y, Three_D_P1.adress(0)) && check(x + 2, y, Three_D_P1.adress(0))) {
-                    Player_box[x + 1][y] = Three_D_P1.adress(1);
-                    Player_box[x + 2][y] = Three_D_P1.adress(2);
-                }
-
-                else {
-                    if ((check(x + 1, y, Three_D_P1.adress(0)) && check(x - 1, y, Three_D_P1.adress(0))) && x > 0) {
-                        Player_box[x + 1][y] = Three_D_P1.adress(1);
-                        Player_box[x - 1][y] = Three_D_P1.adress(2);
-                    }
-                    if ((check(x - 1, y, Three_D_P1.adress(0)) && check(x - 2, y, Three_D_P1.adress(0))) && x > 1) {
-                        Player_box[x - 1][y] = Three_D_P1.adress(1);
-                        Player_box[x - 2][y] = Three_D_P1.adress(2);
-                    }
-                    else {
-                        std::cout << "Не возможно установить по вертикали";
-                    }
-                }
+        if ((!up && Ch == 1) || (!down && Ch == 2) || (!left && Ch == 3) || (!right && Ch == 4) || Ch < 1 || Ch > 4) {
+            while ((!up && Ch == 1) || (!down && Ch == 2) || (!left && Ch == 3) || (!right && Ch == 4) || Ch < 1 || Ch > 4) {
+                std::cout << "Неверное направление\n- ";
+                std::cin >> Ch;
             }
-            else {
-                if (check(x - 1, y, Three_D_P1.adress(0)) && check(x - 2, y, Three_D_P1.adress(0)) && x == 9 ) {
-                    Player_box[x - 1][y] = Three_D_P1.adress(1);
-                    Player_box[x - 2][y] = Three_D_P1.adress(2);
-                }
-                if (check(x + 1, y, Three_D_P1.adress(0)) && check(x - 1, y, Three_D_P1.adress(0)) &&  x <= 8) {
-                    Player_box[x + 1][y] = Three_D_P1.adress(1);
-                    Player_box[x - 1][y] = Three_D_P1.adress(2);
-                }
-                else {
-                    std::cout << "Не возможно установить по вертикали";
-                }
-
+        }        
+        Placement_P(x, y, player.Three_D_1.get_size(), &player.Three_D_1, Ch, Player_box);
+        box_out();
+        std::cout << "Установите второй трехпалубный корабль:\nВведите букву A - J - ";
+        std::cin >> z;
+        y = Transformation(z);
+        if (y == -1) {
+            while (y == -1) {
+                std::cout << "Неверный ввод.\nВведите букву A - J - ";
+                std::cin >> z;
+                y = Transformation(z);
             }
         }
+        std::cout << "Введите цифру 0 - 9 - ";
+        std::cin >> x;
+        Check_sides(x, y, player.Three_D_2.adress(0), player.Three_D_2.get_size(), up_ref, down_ref, left_ref, right_ref, Player_box);
+        if (!up && !down && !right && !left) {
+            while (!up && !down && !right && !left) {
+                std::cout << "Невозможно установить корабль!\nВведите букву A - J - ";
+                std::cin >> z;
+                y = Transformation(z);
+                std::cout << "Введите цифру 0 - 9 - ";
+                std::cin >> x;
+                Check_sides(x, y, player.Three_D_2.adress(0), player.Three_D_2.get_size(), up_ref, down_ref, left_ref, right_ref, Player_box);
+            }
+        }
+        player.Three_D_2.set_start(x, y);
+        Player_box[x][y] = player.Three_D_2.adress(0);
+        Menu_placement(up, down, right, left);
+        std::cin >> Ch;
+        if ((!up && Ch == 1) || (!down && Ch == 2) || (!left && Ch == 3) || (!right && Ch == 4) || Ch < 1 || Ch > 4) {
+            while ((!up && Ch == 1) || (!down && Ch == 2) || (!left && Ch == 3) || (!right && Ch == 4) || Ch < 1 || Ch > 4) {
+                std::cout << "Неверное направление\n- ";
+                std::cin >> Ch;
+            }
+        }      
+        Placement_P(x, y, player.Three_D_2.get_size(), &player.Three_D_2, Ch, Player_box);
+        box_out();
+        std::cout << "Установите первый двухпалубный корабль:\nВведите букву A - J - ";
+        std::cin >> z;
+        y = Transformation(z);
+        if (y == -1) {
+            while (y == -1) {
+                std::cout << "Неверный ввод.\nВведите букву A - J - ";
+                std::cin >> z;
+                y = Transformation(z);
+            }
+        }
+        std::cout << "Введите цифру 0 - 9 - ";
+        std::cin >> x;
+        Check_sides(x, y, player.Two_D_1.adress(0), player.Two_D_1.get_size(), up_ref, down_ref, left_ref, right_ref, Player_box);
+        if (!up && !down && !right && !left) {
+            while (!up && !down && !right && !left) {
+                std::cout << "Невозможно установить корабль!\nВведите букву A - J - ";
+                std::cin >> z;
+                y = Transformation(z);
+                std::cout << "Введите цифру 0 - 9 - ";
+                std::cin >> x;
+                Check_sides(x, y, player.Two_D_1.adress(0), player.Two_D_1.get_size(), up_ref, down_ref, left_ref, right_ref, Player_box);
+            }
+        }
+        player.Two_D_1.set_start(x, y);
+        Player_box[x][y] = player.Two_D_1.adress(0);
+        Menu_placement(up, down, right, left);
+        std::cin >> Ch;
+        if ((!up && Ch == 1) || (!down && Ch == 2) || (!left && Ch == 3) || (!right && Ch == 4) || Ch < 1 || Ch > 4) {
+            while ((!up && Ch == 1) || (!down && Ch == 2) || (!left && Ch == 3) || (!right && Ch == 4) || Ch < 1 || Ch > 4) {
+                std::cout << "Неверное направление\n- ";
+                std::cin >> Ch;
+            }
+        }
+        Placement_P(x, y, player.Two_D_1.get_size(), &player.Two_D_1, Ch, Player_box);
+        box_out();
+        std::cout << "Установите второй двухпалубный корабль:\nВведите букву A - J - ";
+        std::cin >> z;
+        y = Transformation(z);
+        if (y == -1) {
+            while (y == -1) {
+                std::cout << "Неверный ввод.\nВведите букву A - J - ";
+                std::cin >> z;
+                y = Transformation(z);
+            }
+        }
+        std::cout << "Введите цифру 0 - 9 - ";
+        std::cin >> x;
+        Check_sides(x, y, player.Two_D_2.adress(0), player.Two_D_2.get_size(), up_ref, down_ref, left_ref, right_ref, Player_box);
+        if (!up && !down && !right && !left) {
+            while (!up && !down && !right && !left) {
+                std::cout << "Невозможно установить корабль!\nВведите букву A - J - ";
+                std::cin >> z;
+                y = Transformation(z);
+                std::cout << "Введите цифру 0 - 9 - ";
+                std::cin >> x;
+                Check_sides(x, y, player.Two_D_2.adress(0), player.Two_D_2.get_size(), up_ref, down_ref, left_ref, right_ref, Player_box);
+            }
+        }
+        player.Two_D_2.set_start(x, y);
+        Player_box[x][y] = player.Two_D_2.adress(0);
+        Menu_placement(up, down, right, left);
+        std::cin >> Ch;
+        if ((!up && Ch == 1) || (!down && Ch == 2) || (!left && Ch == 3) || (!right && Ch == 4) || Ch < 1 || Ch > 4) {
+            while ((!up && Ch == 1) || (!down && Ch == 2) || (!left && Ch == 3) || (!right && Ch == 4) || Ch < 1 || Ch > 4) {
+                std::cout << "Неверное направление\n- ";
+                std::cin >> Ch;
+            }
+        }
+        Placement_P(x, y, player.Two_D_2.get_size(), &player.Two_D_2, Ch, Player_box);
+        box_out();
+        std::cout << "Установите третий двухпалубный корабль:\nВведите букву A - J - ";
+        std::cin >> z;
+        y = Transformation(z);
+        if (y == -1) {
+            while (y == -1) {
+                std::cout << "Неверный ввод.\nВведите букву A - J - ";
+                std::cin >> z;
+                y = Transformation(z);
+            }
+        }
+        std::cout << "Введите цифру 0 - 9 - ";
+        std::cin >> x;
+        Check_sides(x, y, player.Two_D_3.adress(0), player.Two_D_3.get_size(), up_ref, down_ref, left_ref, right_ref, Player_box);
+        if (!up && !down && !right && !left) {
+            while (!up && !down && !right && !left) {
+                std::cout << "Невозможно установить корабль!\nВведите букву A - J - ";
+                std::cin >> z;
+                y = Transformation(z);
+                std::cout << "Введите цифру 0 - 9 - ";
+                std::cin >> x;
+                Check_sides(x, y, player.Two_D_3.adress(0), player.Two_D_3.get_size(), up_ref, down_ref, left_ref, right_ref, Player_box);
+            }
+        }
+        player.Two_D_3.set_start(x, y);
+        Player_box[x][y] = player.Two_D_3.adress(0);
+        Menu_placement(up, down, right, left);
+        std::cin >> Ch;
+        if ((!up && Ch == 1) || (!down && Ch == 2) || (!left && Ch == 3) || (!right && Ch == 4) || Ch < 1 || Ch > 4) {
+            while ((!up && Ch == 1) || (!down && Ch == 2) || (!left && Ch == 3) || (!right && Ch == 4) || Ch < 1 || Ch > 4) {
+                std::cout << "Неверное направление\n- ";
+                std::cin >> Ch;
+            }
+        }
+        Placement_P(x, y, player.Two_D_3.get_size(), &player.Two_D_3, Ch, Player_box);
+        box_out();
+        std::cout << "Установите первый однопалубный корабль:\nВведите букву A - J - ";
+        std::cin >> z;
+        y = Transformation(z);
+        if (y == -1) {
+            while (y == -1) {
+                std::cout << "Неверный ввод.\nВведите букву A - J - ";
+                std::cin >> z;
+                y = Transformation(z);
+            }
+        }
+        std::cout << "Введите цифру 0 - 9 - ";
+        std::cin >> x;
+        Check_sides(x, y, player.Single_D_1.adress(0), player.Single_D_1.get_size(), up_ref, down_ref, left_ref, right_ref, Player_box);
+        if (!up) {
+            while (!up) {
+                std::cout << "Невозможно установить корабль!\nВведите букву A - J - ";
+                std::cin >> z;
+                y = Transformation(z);
+                std::cout << "Введите цифру 0 - 9 - ";
+                std::cin >> x;
+                Check_sides(x, y, player.Single_D_1.adress(0), player.Single_D_1.get_size(), up_ref, down_ref, left_ref, right_ref, Player_box);
+            }
+        }
+        player.Single_D_1.set_start(x, y);
+        Player_box[x][y] = player.Single_D_1.adress(0);
+        player.Single_D_1.set_end(x, y);
+        box_out();
+        std::cout << "Установите второй однопалубный корабль:\nВведите букву A - J - ";
+        std::cin >> z;
+        y = Transformation(z);
+        if (y == -1) {
+            while (y == -1) {
+                std::cout << "Неверный ввод.\nВведите букву A - J - ";
+                std::cin >> z;
+                y = Transformation(z);
+            }
+        }
+        std::cout << "Введите цифру 0 - 9 - ";
+        std::cin >> x;
+        Check_sides(x, y, player.Single_D_2.adress(0), player.Single_D_2.get_size(), up_ref, down_ref, left_ref, right_ref, Player_box);
+        if (!up) {
+            while (!up) {
+                std::cout << "Невозможно установить корабль!\nВведите букву A - J - ";
+                std::cin >> z;
+                y = Transformation(z);
+                std::cout << "Введите цифру 0 - 9 - ";
+                std::cin >> x;
+                Check_sides(x, y, player.Single_D_2.adress(0), player.Single_D_2.get_size(), up_ref, down_ref, left_ref, right_ref, Player_box);
+            }
+        }
+        player.Single_D_2.set_start(x, y);
+        Player_box[x][y] = player.Single_D_2.adress(0);
+        player.Single_D_2.set_end(x, y);
+        box_out();
+        std::cout << "Установите третий однопалубный корабль:\nВведите букву A - J - ";
+        std::cin >> z;
+        y = Transformation(z);
+        if (y == -1) {
+            while (y == -1) {
+                std::cout << "Неверный ввод.\nВведите букву A - J - ";
+                std::cin >> z;
+                y = Transformation(z);
+            }
+        }
+        std::cout << "Введите цифру 0 - 9 - ";
+        std::cin >> x;
+        Check_sides(x, y, player.Single_D_3.adress(0), player.Single_D_3.get_size(), up_ref, down_ref, left_ref, right_ref, Player_box);
+        if (!up) {
+            while (!up) {
+                std::cout << "Невозможно установить корабль!\nВведите букву A - J - ";
+                std::cin >> z;
+                y = Transformation(z);
+                std::cout << "Введите цифру 0 - 9 - ";
+                std::cin >> x;
+                Check_sides(x, y, player.Single_D_3.adress(0), player.Single_D_3.get_size(), up_ref, down_ref, left_ref, right_ref, Player_box);
+            }
+        }
+        player.Single_D_3.set_start(x, y);
+        Player_box[x][y] = player.Single_D_3.adress(0);
+        player.Single_D_3.set_end(x, y);
+        box_out();
+        std::cout << "Установите четвертый однопалубный корабль:\nВведите букву A - J - ";
+        std::cin >> z;
+        y = Transformation(z);
+        if (y == -1) {
+            while (y == -1) {
+                std::cout << "Неверный ввод.\nВведите букву A - J - ";
+                std::cin >> z;
+                y = Transformation(z);
+            }
+        }
+        std::cout << "Введите цифру 0 - 9 - ";
+        std::cin >> x;
+        Check_sides(x, y, player.Single_D_4.adress(0), player.Single_D_4.get_size(), up_ref, down_ref, left_ref, right_ref, Player_box);
+        if (!up) {
+            while (!up) {
+                std::cout << "Невозможно установить корабль!\nВведите букву A - J - ";
+                std::cin >> z;
+                y = Transformation(z);
+                std::cout << "Введите цифру 0 - 9 - ";
+                std::cin >> x;
+                Check_sides(x, y, player.Single_D_4.adress(0), player.Single_D_4.get_size(), up_ref, down_ref, left_ref, right_ref, Player_box);
+            }
+        }
+        player.Single_D_4.set_start(x, y);
+        Player_box[x][y] = player.Single_D_4.adress(0);
+        player.Single_D_4.set_end(x, y);
+        box_out();
+    }
+
+    void Auto_placement(bool*** box, Ship_complect* object) { 
+        srand(time(0));
+        short x = rand() % 10;
+        short y = rand() % 10;
+        short Ch = 0;
+        bool up = false;
+        bool down = false;
+        bool right = false;
+        bool left = false;
+        bool* up_ref = &up;
+        bool* down_ref = &down;
+        bool* right_ref = &right;
+        bool* left_ref = &left;
+        Check_sides(x, y, object->Four_D.adress(0), object->Four_D.get_size(), up_ref, down_ref, left_ref, right_ref, box);
+        if (!up && !down && !right && !down) {
+            while (!up && !down && !right && !down) {
+                y += 1;
+                if (y > 9) {
+                    y = 0;
+                    x += 1;
+                    if (x > 9) {
+                        x = 0;
+                    }
+                }
+                Check_sides(x, y, object->Four_D.adress(0), object->Four_D.get_size(), up_ref, down_ref, left_ref, right_ref, box);
+            }
+        }  
+        box[x][y] = object->Four_D.adress(0);
+        object->Four_D.set_start(x, y);
+        Ch = rand() % 4 + 1;
+        if ((!up && Ch == 1) || (!down && Ch == 2) || (!left && Ch == 3) || (!right && Ch == 4) || Ch < 1 || Ch > 4) {
+            while ((!up && Ch == 1) || (!down && Ch == 2) || (!left && Ch == 3) || (!right && Ch == 4)) {
+                Ch += 1;
+                if (Ch > 4) {
+                    Ch = 1;
+                }
+            }
+        }
+        Placement_P(x, y, object->Four_D.get_size(), &object->Four_D, Ch, box);
+
+        x = rand() % 10;
+        y = rand() % 10;
+        Check_sides(x, y, object->Three_D_1.adress(0), object->Three_D_1.get_size(), up_ref, down_ref, left_ref, right_ref, box);
+        if (!up && !down && !right && !down) {
+            while (!up && !down && !right && !down) {
+                y += 1;
+                if (y > 9) {
+                    y = 0;
+                    x += 1;
+                    if (x > 9) {
+                        x = 0;
+                    }
+                }
+                Check_sides(x, y, object->Three_D_1.adress(0), object->Three_D_1.get_size(), up_ref, down_ref, left_ref, right_ref, box);
+            }
+        }
+        box[x][y] = object->Three_D_1.adress(0);
+        object->Three_D_1.set_start(x, y);
+        Ch = rand() % 4 + 1;
+        if ((!up && Ch == 1) || (!down && Ch == 2) || (!left && Ch == 3) || (!right && Ch == 4) || Ch < 1 || Ch > 4) {
+            while ((!up && Ch == 1) || (!down && Ch == 2) || (!left && Ch == 3) || (!right && Ch == 4) || Ch < 1 || Ch > 4) {
+                Ch += 1;
+                if (Ch > 4) {
+                    Ch = 1;
+                }
+            }
+        }
+        Placement_P(x, y, object->Three_D_1.get_size(), &object->Three_D_1, Ch, box);
+
+        x = rand() % 10;
+        y = rand() % 10;
+        Check_sides(x, y, object->Three_D_2.adress(0), object->Three_D_2.get_size(), up_ref, down_ref, left_ref, right_ref, box);
+        if (!up && !down && !right && !down) {
+            while (!up && !down && !right && !down) {
+                y += 1;
+                if (y > 9) {
+                    y = 0;
+                    x += 1;
+                    if (x > 9) {
+                        x = 0;
+                    }
+                }
+                Check_sides(x, y, object->Three_D_2.adress(0), object->Three_D_2.get_size(), up_ref, down_ref, left_ref, right_ref, box);
+            }
+        }
+        box[x][y] = object->Three_D_2.adress(0);
+        object->Three_D_2.set_start(x, y);
+        Ch = rand() % 4 + 1;
+        if ((!up && Ch == 1) || (!down && Ch == 2) || (!left && Ch == 3) || (!right && Ch == 4) || Ch < 1 || Ch > 4) {
+            while ((!up && Ch == 1) || (!down && Ch == 2) || (!left && Ch == 3) || (!right && Ch == 4) || Ch < 1 || Ch > 4) {
+                Ch += 1;
+                if (Ch > 4) {
+                    Ch = 1;
+                }
+            }
+        }
+        Placement_P(x, y, object->Three_D_2.get_size(), &object->Three_D_2, Ch, box);
+
+        x = rand() % 10;
+        y = rand() % 10;
+        Check_sides(x, y, object->Two_D_1.adress(0), object->Two_D_1.get_size(), up_ref, down_ref, left_ref, right_ref, box);
+        if (!up && !down && !right && !down) {
+            while (!up && !down && !right && !down) {
+                y += 1;
+                if (y > 9) {
+                    y = 0;
+                    x += 1;
+                    if (x > 9) {
+                        x = 0;
+                    }
+                }
+                Check_sides(x, y, object->Two_D_1.adress(0), object->Two_D_1.get_size(), up_ref, down_ref, left_ref, right_ref, box);
+            }
+        }
+        box[x][y] = object->Two_D_1.adress(0);
+        object->Two_D_1.set_start(x, y);
+        Ch = rand() % 4 + 1;
+        if ((!up && Ch == 1) || (!down && Ch == 2) || (!left && Ch == 3) || (!right && Ch == 4) || Ch < 1 || Ch > 4) {
+            while ((!up && Ch == 1) || (!down && Ch == 2) || (!left && Ch == 3) || (!right && Ch == 4) || Ch < 1 || Ch > 4) {
+                Ch += 1;
+                if (Ch > 4) {
+                    Ch = 1;
+                }
+            }
+        }
+        Placement_P(x, y, object->Two_D_1.get_size(), &object->Two_D_1, Ch, box);
+
+        x = rand() % 10;
+        y = rand() % 10;
+        Check_sides(x, y, object->Two_D_2.adress(0), object->Two_D_2.get_size(), up_ref, down_ref, left_ref, right_ref, box);
+        if (!up && !down && !right && !down) {
+            while (!up && !down && !right && !down) {
+                y += 1;
+                if (y > 9) {
+                    y = 0;
+                    x += 1;
+                    if (x > 9) {
+                        x = 0;
+                    }
+                }
+                Check_sides(x, y, object->Two_D_2.adress(0), object->Two_D_2.get_size(), up_ref, down_ref, left_ref, right_ref, box);
+            }
+        }
+        box[x][y] = object->Two_D_2.adress(0);
+        object->Two_D_2.set_start(x, y);
+        Ch = rand() % 4 + 1;
+        if ((!up && Ch == 1) || (!down && Ch == 2) || (!left && Ch == 3) || (!right && Ch == 4) || Ch < 1 || Ch > 4) {
+            while ((!up && Ch == 1) || (!down && Ch == 2) || (!left && Ch == 3) || (!right && Ch == 4) || Ch < 1 || Ch > 4) {
+                Ch += 1;
+                if (Ch > 4) {
+                    Ch = 1;
+                }
+            }
+        }
+        Placement_P(x, y, object->Two_D_2.get_size(), &object->Two_D_2, Ch, box);
+
+        x = rand() % 10;
+        y = rand() % 10;
+        Check_sides(x, y, object->Two_D_3.adress(0), object->Two_D_3.get_size(), up_ref, down_ref, left_ref, right_ref, box);
+        if (!up && !down && !right && !down) {
+            while (!up && !down && !right && !down) {
+                y += 1;
+                if (y > 9) {
+                    y = 0;
+                    x += 1;
+                    if (x > 9) {
+                        x = 0;
+                    }
+                }
+                Check_sides(x, y, object->Two_D_3.adress(0), object->Two_D_3.get_size(), up_ref, down_ref, left_ref, right_ref, box);
+            }
+        }
+        box[x][y] = object->Two_D_3.adress(0);
+        object->Two_D_3.set_start(x, y);
+        Ch = rand() % 4 + 1;
+        if ((!up && Ch == 1) || (!down && Ch == 2) || (!left && Ch == 3) || (!right && Ch == 4) || Ch < 1 || Ch > 4) {
+            while ((!up && Ch == 1) || (!down && Ch == 2) || (!left && Ch == 3) || (!right && Ch == 4) || Ch < 1 || Ch > 4) {
+                Ch += 1;
+                if (Ch > 4) {
+                    Ch = 1;
+                }
+            }
+        }
+        Placement_P(x, y, object->Two_D_3.get_size(), &object->Two_D_3, Ch, box);
+
+        x = rand() % 10;
+        y = rand() % 10;
+        Check_sides(x, y, object->Single_D_1.adress(0), object->Single_D_1.get_size(), up_ref, down_ref, left_ref, right_ref, box);
+        if (!up) {
+            while (!up) {
+                y += 1;
+                if (y > 9) {
+                    y = 0;
+                    x += 1;
+                    if (x > 9) {
+                        x = 0;
+                    }
+                }
+                Check_sides(x, y, object->Single_D_1.adress(0), object->Single_D_1.get_size(), up_ref, down_ref, left_ref, right_ref, box);
+            }
+        }
+        box[x][y] = object->Single_D_1.adress(0);
+        object->Single_D_1.set_start(x, y);
+        object->Single_D_1.set_end(x, y);
+
+        x = rand() % 10;
+        y = rand() % 10;
+        Check_sides(x, y, object->Single_D_2.adress(0), object->Single_D_2.get_size(), up_ref, down_ref, left_ref, right_ref, box);
+        if (!up) {
+            while (!up) {
+                y += 1;
+                if (y > 9) {
+                    y = 0;
+                    x += 1;
+                    if (x > 9) {
+                        x = 0;
+                    }
+                }
+                Check_sides(x, y, object->Single_D_2.adress(0), object->Single_D_2.get_size(), up_ref, down_ref, left_ref, right_ref, box);
+            }
+        }
+        box[x][y] = object->Single_D_2.adress(0);
+        object->Single_D_2.set_start(x, y);
+        object->Single_D_2.set_end(x, y);
+
+        x = rand() % 10;
+        y = rand() % 10;
+        Check_sides(x, y, object->Single_D_3.adress(0), object->Single_D_3.get_size(), up_ref, down_ref, left_ref, right_ref, box);
+        if (!up) {
+            while (!up) {
+                y += 1;
+                if (y > 9) {
+                    y = 0;
+                    x += 1;
+                    if (x > 9) {
+                        x = 0;
+                    }
+                }
+                Check_sides(x, y, object->Single_D_3.adress(0), object->Single_D_3.get_size(), up_ref, down_ref, left_ref, right_ref, box);
+            }
+        }
+        box[x][y] = object->Single_D_3.adress(0);
+        object->Single_D_3.set_start(x, y);
+        object->Single_D_3.set_end(x, y);
+
+        x = rand() % 10;
+        y = rand() % 10;
+        Check_sides(x, y, object->Single_D_4.adress(0), object->Single_D_4.get_size(), up_ref, down_ref, left_ref, right_ref, box);
+        if (!up) {
+            while (!up) {
+                y += 1;
+                if (y > 9) {
+                    y = 0;
+                    x += 1;
+                    if (x > 9) {
+                        x = 0;
+                    }
+                }
+                Check_sides(x, y, object->Single_D_4.adress(0), object->Single_D_4.get_size(), up_ref, down_ref, left_ref, right_ref, box);
+            }
+        }
+        box[x][y] = object->Single_D_4.adress(0);
+        object->Single_D_4.set_start(x, y);
+        object->Single_D_4.set_end(x, y);
     }
 
     ~Sea_Battle() {
@@ -413,20 +982,12 @@ public:
 
 int main()
 {
+    
     Sea_Battle A;
-    A.box_out();
-    A.Placement();
+   
+    A.Auto_placement(A.Get_pl_box(), A.Get_complect_pl());
     A.box_out();
 }
 
-// Запуск программы: CTRL+F5 или меню "Отладка" > "Запуск без отладки"
-// Отладка программы: F5 или меню "Отладка" > "Запустить отладку"
 
-// Советы по началу работы
-//   1. В окне обозревателя решений можно добавлять файлы и управлять ими.
-//   2. В окне Team Explorer можно подключиться к системе управления версиями.
-//   3. В окне "Выходные данные" можно просматривать выходные данные сборки и другие сообщения.
-//   4. В окне "Список ошибок" можно просматривать ошибки.
-//   5. Последовательно выберите пункты меню "Проект" > "Добавить новый элемент", чтобы создать файлы кода, или "Проект" > "Добавить существующий элемент", чтобы добавить в проект существующие файлы кода.
-//   6. Чтобы снова открыть этот проект позже, выберите пункты меню "Файл" > "Открыть" > "Проект" и выберите SLN-файл.
 
