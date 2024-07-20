@@ -2,13 +2,43 @@
 //
 #include <iostream>
 #include <ctime>
+#include <Windows.h>
 short box_size = 10;
 short Line = 33;
 void print_line() {
     for (int i = 0; i < Line; i++) {
         std::cout << "-";
     }
+    std::cout << "\t";
+    for (int i = 0; i < Line; i++) {
+        std::cout << "-";
+    }
     std::cout << std::endl;
+}
+
+void sleep_out() {
+    std::cout << ".";
+    Sleep(500);
+    std::cout << ".";
+    Sleep(500);
+    std::cout << ".";
+    Sleep(500);
+}
+
+
+void print_line(short x) {
+    if (x == 1) {
+        for (int i = 0; i < Line * 2; i++) {
+            std::cout << "-";
+        }
+        std::cout << std::endl;
+    }
+    else {
+        for (int i = 0; i < Line; i++) {
+            std::cout << "-";
+        }
+        std::cout << std::endl;
+    }
 }
 
 short Transformation(char z) {
@@ -24,10 +54,47 @@ short Transformation(char z) {
     if (z == 'j' || z == 'J') return 9;
     else return -1;
 }
+char Transformation(short z) {
+    if (z == 0) return 'A';
+    if (z == 1) return 'B';
+    if (z == 2) return 'C';
+    if (z == 3) return 'D';
+    if (z == 4) return 'E';
+    if (z == 5) return 'F';
+    if (z == 6) return 'G';
+    if (z == 7) return 'H';
+    if (z == 8) return 'I';
+    if (z == 9) return 'J';
+    else return -1;
+}
+
+void prefire(short y, short x) {
+    char z = Transformation(y);
+    std::cout << "\nВыстрел компьютера - \n";
+    sleep_out();
+    std::cout << "\n" << z << std::endl;
+    sleep_out();
+    std::cout << "\n" << x << std::endl;
+    sleep_out();
+    std::cout << std::endl;
+}
 
 struct Coord{
     short x;
     short y;
+};
+
+struct Sides {
+    bool up;
+    bool down;
+    bool right;
+    bool left;
+    Sides() {
+        up = false;
+        down = false;
+        right = false;
+        left = false;
+    }
 };
 
 class Ship {
@@ -64,9 +131,16 @@ public:
         }
         return condition = false;
     }
-
+    // Shoot возвращает:
+    // 1 - если ранил
+    // 2 - если убил
+    // 3 - если уже было попадание
+    // 0 - если координаты не относятся к этому кораблю
     short shoot(bool* coord) {
         for (short i = 0; i < size; i++) {
+            if (coord == ship + i && ship[i]) {
+                return 3;
+            }
             if (coord == ship + i && !ship[i]) {
                 ship[i] = true;
                 if (check_condition()) {
@@ -118,6 +192,7 @@ public:
 
     ~Ship() {
         delete[] ship;
+        std::cout << "Ship " << this->size << " deleted" << std::endl;
     }
 };
 
@@ -133,6 +208,7 @@ struct Ship_complect {
     Ship* Single_D_3;
     Ship* Single_D_4;
     Ship* Hitting;
+    bool complect_condition;
     Ship_complect() {
         Four_D = nullptr;
         Three_D_1 = nullptr;
@@ -145,12 +221,20 @@ struct Ship_complect {
         Single_D_3 = nullptr;
         Single_D_4 = nullptr;
         Hitting = nullptr;
+        complect_condition = false;
     }
     // Поиск конкретного корабля
+    // 1 - если ранил
+    // 2 - если убил
+    // 3 - если повторное попадание
+    // 0 - если мимо
     short shoot(bool* coord) {
         short kick = Single_D_1->shoot(coord);
         if (kick == 1 || kick == 2) {
             Hitting = Single_D_1;
+            return kick;
+        }
+        if (kick == 3) {
             return kick;
         }
         else {
@@ -159,10 +243,16 @@ struct Ship_complect {
                 Hitting = Single_D_2;
                 return kick;
             }
+            if (kick == 3) {
+                return kick;
+            }
             else {
                 kick = Single_D_3->shoot(coord);
                 if (kick == 1 || kick == 2) {
                     Hitting = Single_D_3;
+                    return kick;
+                }
+                if (kick == 3) {
                     return kick;
                 }
                 else {
@@ -171,10 +261,16 @@ struct Ship_complect {
                         Hitting = Single_D_4;
                         return kick;
                     }
+                    if (kick == 3) {
+                        return kick;
+                    }
                     else {
                         kick = Two_D_1->shoot(coord);
                         if (kick == 1 || kick == 2) {
                             Hitting = Two_D_1;
+                            return kick;
+                        }
+                        if (kick == 3) {
                             return kick;
                         }
                         else {
@@ -183,10 +279,16 @@ struct Ship_complect {
                                 Hitting = Two_D_2;
                                 return kick;
                             }
+                            if (kick == 3) {
+                                return kick;
+                            }
                             else {
                                 kick = Two_D_3->shoot(coord);
                                 if (kick == 1 || kick == 2) {
                                     Hitting = Two_D_3;
+                                    return kick;
+                                }
+                                if (kick == 3) {
                                     return kick;
                                 }
                                 else {
@@ -195,10 +297,16 @@ struct Ship_complect {
                                         Hitting = Three_D_1;
                                         return kick;
                                     }
+                                    if (kick == 3) {
+                                        return kick;
+                                    }
                                     else {
                                         kick = Three_D_2->shoot(coord);
                                         if (kick == 1 || kick == 2) {
                                             Hitting = Three_D_2;
+                                            return kick;
+                                        }
+                                        if (kick == 3) {
                                             return kick;
                                         }
                                         else {
@@ -207,8 +315,21 @@ struct Ship_complect {
                                                 Hitting = Four_D;
                                                 return kick;
                                             }
-                                            else {
+                                            if (kick == 3) {
                                                 return kick;
+                                            }
+                                            else {
+                                                kick = Four_D->shoot(coord);
+                                                if (kick == 1 || kick == 2) {
+                                                    Hitting = Four_D;
+                                                    return kick;
+                                                }
+                                                if (kick == 3) {
+                                                    return kick;
+                                                }
+                                                else {
+                                                    return kick;
+                                                }
                                             }
                                         }
                                     }
@@ -229,9 +350,19 @@ private:
     bool*** Comp_box;
     Ship_complect player;
     Ship_complect computer;
+    // для хранения координат пораженного корабля
     Coord comp_seria[4];
+
+    // для хранения состояния подбитого корабля
+    // false - либо мимо либо корабль уничтожен
+    // true - корабль ранен но не уничтожен
     bool comp_shoot;
+
+    // отметка уже стреляли
     bool hit;
+
+    Sides shoot_sides_first;
+    Sides shoot_sides_last;
 public:
     Sea_Battle() {
         comp_shoot = false;
@@ -269,10 +400,54 @@ public:
         return Comp_box;
     }
 
-    void box_out(bool ***box) {
+    void box_out() {
+        std::cout << "\tВАШЕ ПОЛЕ\t\t\t\tПОЛЕ КОМПЬЮТЕРА\n\n|||A |B |C |D |E |F |G |H |I |J | \t|||A |B |C |D |E |F |G |H |I |J |\n";
         print_line();
+        for (short i = 0; i < box_size; i++) {
+            std::cout << i << " ";
+            for (short j = 0; j < box_size; j++) {
+                if (Player_box[i][j] == nullptr) {
+                    std::cout << "|  ";
+                }
+                else {
+                    if (!*Player_box[i][j]) {
+                        std::cout << "|##";
+                    }
+                    else {
+                        if (Player_box[i][j] != &hit) {
+                            std::cout << "|**";
+                        }
+                        else std::cout << "|~~";
+                    }
+                }
+            }
+            std::cout << "|\t";
+            std::cout << i << " ";
+            for (short j = 0; j < box_size; j++) {
+                if (Comp_box[i][j] == nullptr) {
+                    std::cout << "|  ";
+                }
+                else {
+                    if (!*Comp_box[i][j]) {
+                        std::cout << "|  ";
+                    }
+                    else {
+                        if (Comp_box[i][j] != &hit) {
+                            std::cout << "|**";
+                        }
+                        else std::cout << "|~~";
+                    }
+                }
+            }
+            std::cout << "|\n";
+            print_line();
+        }
+    }
+
+
+    void box_out(bool *** box) {
         std::cout << "|||A |B |C |D |E |F |G |H |I |J |\n";
-        print_line();
+        print_line(2);
         for (short i = 0; i < box_size; i++) {
             std::cout << i << " ";
             for (short j = 0; j < box_size; j++) {
@@ -292,84 +467,194 @@ public:
                 }
             }
             std::cout << "|\n";
-            print_line();
+            print_line(2);
         }
     }
 
-
-    void check_attack(bool*** box, short x, short y ,bool *up, bool *down, bool *right, bool *left) {
+    // проверка направлений для выстрела компьютера
+    void check_attack(bool*** box, short x, short y , Sides *side) {
         if (x == 0 && y == 0) {
-            *up = false;
-            *left = false;
-            if (box[x - 1][y] == &hit) {
-                *down = false;
+            side->up = false;
+            side->left = false;
+            if (box[x + 1][y] != nullptr && *box[x + 1][y]) {
+                side->down = false;
             }
             else {
-                *down = true;
+                side->down = true;
             }
-            if (box[x][y + 1] == &hit) {
-                *right = false;
+            if (box[x][y + 1] != nullptr && *box[x][y + 1]) {
+                side->right = false;
             }
             else {
-                *right = true;
+                side->right = true;
             }
             return;
         }
         if (x == 0 && y == 9) {
-            *down = false;
-            *left = false;
-            if (box[x + 1][y] == &hit) {
-                *up = false;
+            side->up = false;
+            side->right = false;
+            if (box[x + 1][y] != nullptr && *box[x + 1][y]) {
+                side->down = false;
             }
             else {
-                *up = true;
+                side->down = true;
             }
-            if (box[x][y + 1] == &hit) {
-                *right = false;
+            if (box[x][y - 1] != nullptr && *box[x][y - 1]) {
+                side->left = false;
             }
             else {
-                *right = true;
+                side->left = true;
             }
             return;
         }
         if (x == 9 && y == 0) {
-            *up = false;
-            *right = false;
-            if (box[x - 1][y] == &hit) {
-                *down = false;
+            side->down = false;
+            side->left = false;
+            if (box[x - 1][y] != nullptr && *box[x - 1][y]) {
+               side->up = false;
             }
             else {
-                *down = true;
+                side->up = true;
             }
-            if (box[x][y - 1] == &hit) {
-                *left = false;
+            if (box[x][y + 1] != nullptr && *box[x][y + 1]) {
+                side->right = false;
             }
             else {
-                *left = true;
+                side->right = true;
             }
             return;
         }
         if (x == 9 && y == 9) {
-            *down = false;
-            *right = false;
-            if (box[x + 1][y] == &hit) {
-                *up = false;
+            side->down = false;
+            side->right = false;
+            if (box[x - 1][y] != nullptr && *box[x - 1][y]) {
+                side->up = false;
             }
             else {
-                *up = true;
+                side->up = true;
             }
-            if (box[x][y - 1] == &hit) {
-                *left = false;
+            if (box[x][y - 1] != nullptr && *box[x][y - 1]) {
+                side->left = false;
             }
             else {
-                *left = true;
+                side->left = true;
             }
             return;
         }
         if (x == 0) {
-            up = false;
+            side->up = false;
+            if (box[x + 1][y] != nullptr && *box[x + 1][y]) {
+                side->down = false;
+            }
+            else {
+                side->down = true;
+            }
+            if (box[x][y - 1] != nullptr && *box[x][y - 1]) {
+                side->left = false;
+            }
+            else {
+                side->left = true;
+            }
+            if (box[x][y + 1] != nullptr && *box[x][y + 1]) {
+                side->right = false;
+            }
+            else {
+                side->right = true;
+            }
+            return;
         }
-
+        if (x == 9) {
+            side->down = false;
+            if (box[x - 1][y] != nullptr && *box[x - 1][y]) {
+                side->up = false;
+            }
+            else {
+                side->up = true;
+            }
+            if (box[x][y - 1] != nullptr && *box[x][y - 1]) {
+                side->left = false;
+            }
+            else {
+                side->left = true;
+            }
+            if (box[x][y + 1] != nullptr && *box[x][y + 1]) {
+                side->right = false;
+            }
+            else {
+                side->right = true;
+            }
+            return;
+        }
+        if (y == 0) {
+            side->left = false;
+            if (box[x + 1][y] != nullptr && *box[x + 1][y]) {
+                side->down = false;
+            }
+            else {
+                side->down = true;
+            }
+            if (box[x - 1][y] != nullptr && *box[x - 1][y]) {
+                side->up = false;
+            }
+            else {
+                side->up = true;
+            }
+            if (box[x][y + 1] != nullptr && *box[x][y + 1]) {
+                side->right = false;
+            }
+            else {
+                side->right = true;
+            }
+            return;
+        }
+        if (y == 9) {
+            side->right = false;
+            if (box[x + 1][y] != nullptr && *box[x + 1][y]) {
+                side->down = false;
+            }
+            else {
+                side->down = true;
+            }
+            if (box[x - 1][y] != nullptr && *box[x - 1][y]) {
+                side->up = false;
+            }
+            else {
+                side->up = true;
+            }
+            if (box[x][y - 1] != nullptr && *box[x][y - 1]) {
+                side->left = false;
+            }
+            else {
+                side->left = true;
+            }
+            return;
+        }
+        else {
+            if (box[x + 1][y] != nullptr && *box[x + 1][y]) {
+                side->down = false;
+            }
+            else {
+                side->down = true;
+            }
+            if (box[x - 1][y] != nullptr && *box[x - 1][y]) {
+                side->up = false;
+            }
+            else {
+                side->up = true;
+            }
+            if (box[x][y - 1] != nullptr && *box[x][y - 1]) {
+                side->left = false;
+            }
+            else {
+                side->left = true;
+            }
+            if (box[x][y + 1] != nullptr && *box[x][y + 1]) {
+                side->right = false;
+            }
+            else {
+                side->right = true;
+            }
+        }
      }
     // Проверка одной клетки
     bool check_first(short x, short y, bool* object, bool*** box) {
@@ -955,6 +1240,7 @@ public:
         Player_box[x][y] = player.Single_D_4->adress(0);
         player.Single_D_4->set_end(x, y);
         box_out(Player_box);
+        player.complect_condition = true;
     }
 
 
@@ -1233,6 +1519,7 @@ public:
         box[x][y] = object->Single_D_4->adress(0);
         object->Single_D_4->set_start(x, y);
         object->Single_D_4->set_end(x, y);
+        object->complect_condition = true;
     }
 
     // для обведения уничтоженного корабля
@@ -1344,12 +1631,12 @@ public:
             return;
         }
         if (x == 0 && y == 9) {
-            box[x - 1][y + 1] = &hit;
+            box[x + 1][y - 1] = &hit;
             return;
 
         }
         if (x == 9 && y == 0) {
-            box[x + 1][y - 1] = &hit;
+            box[x - 1][y + 1] = &hit;
             return;
         }
         if (x == 9 && y == 9) {
@@ -1385,42 +1672,273 @@ public:
         }
     }
 
-    bool computer_shoot(bool*** box, Ship_complect* object) {
+    // запрет ненужных сторон
+    void lock_sides() {
+        if (comp_seria[0].x == comp_seria[1].x) {
+            shoot_sides_first.up = false;
+            shoot_sides_first.down = false;
+            shoot_sides_last.up = false;
+            shoot_sides_last.down = false;
+        }
+        else {
+            shoot_sides_first.right = false;
+            shoot_sides_first.right = false;
+            shoot_sides_last.left = false;
+            shoot_sides_last.left = false;
+        }
+    }
+
+    // Выстрел компьютера
+    // возвращает
+    // 0 - мимо
+    // 1 - ранил
+    // 2 - убил
+    short computer_shoot(bool*** box, Ship_complect* object) {
         static short seria = 0;
-        short x;
-        short y;
+        short x = 0;
+        short y = 0;
         if (!comp_shoot) {
             srand(time(0));
             x = rand() % 10;
             y = ((rand() % 10) * 1234567) % 10;
+            // проверка на возможность стрелять в эту клетку
+            if (box[x][y] != nullptr && *box[x][y]) {
+                while (box[x][y] != nullptr && *box[x][y]) {
+                    x += 1;
+                    if (x > 9) {
+                        y += 1;
+                        x = 0;
+                        if (y > 9) {
+                            y = 0;
+                        }
+                    }
+                }
+            }
+            prefire(y, x);
             short kick = object->shoot(box[x][y]);
-            static short seria = 0;
             if (kick == 1) {
                 comp_seria[seria].x = x;
                 comp_seria[seria].y = y;
                 comp_shoot = true;
                 seria += 1;
+                after_shoot(box, object, x, y);
+                std::cout << "\nРанен\n";
+                return 1;
             }
-            return true;
-        }
-        else{
-            if (seria == 1)
-                bool up;
-        }
-        
-        
+            if (kick == 2) {
+                for (short i = 0; i < 4; i++) {
+                    comp_seria[i].x = 0;
+                    comp_seria[i].y = 0;
+                }
+                comp_shoot = false;
+                seria = false;
+                after_shoot(box, object, x, y);
+                std::cout << "\nУбит\n";
+                return 2;
+            }
+            else {
+                box[x][y] = &hit;
+                std::cout << "\nМимо\n";
+                return 0;
+            }
 
+        }
+        else {
+            if (seria == 1) {
+                check_attack(box, comp_seria[seria - 1].x, comp_seria[seria - 1].y, &shoot_sides_first);
+                short choice = rand() % 4 + 1;
+                if ((choice == 1 && !shoot_sides_first.up) || (choice == 2 && !shoot_sides_first.down) || (choice == 3 && !shoot_sides_first.right) || (choice == 4 && !shoot_sides_first.left)) {
+                    while ((choice == 1 && !shoot_sides_first.up) || (choice == 2 && !shoot_sides_first.down) || (choice == 3 && !shoot_sides_first.right) || (choice == 4 && !shoot_sides_first.left)) {
+                        choice += 1;
+                        if (choice > 4) {
+                            choice = 1;
+                        }
+                    }
+                }
+                if (choice == 1 && shoot_sides_first.up) {
+                    x = comp_seria[seria - 1].x - 1;
+                    y = comp_seria[seria - 1].y;
+                }
+                if (choice == 2 && shoot_sides_first.down) {
+                    x = comp_seria[seria - 1].x + 1;
+                    y = comp_seria[seria - 1].y;
+                }
+                if (choice == 3 && shoot_sides_first.right) {
+                    x = comp_seria[seria - 1].x;
+                    y = comp_seria[seria - 1].y + 1;
+                }
+                if (choice == 4 && shoot_sides_first.left) {
+                    x = comp_seria[seria - 1].x;
+                    y = comp_seria[seria - 1].y - 1;
+                }
+                prefire(y, x);
+                short kick = object->shoot(box[x][y]);
+                if (kick == 1) {
+                    comp_seria[seria].x = x;
+                    comp_seria[seria].y = y;
+                    comp_shoot = true;
+                    seria += 1;
+                    after_shoot(box, object, x, y);
+                    std::cout << "\nРанен\n";
+                    return 1;
+                }
+                if (kick == 2) {
+                    for (short i = 0; i < 4; i++) {
+                        comp_seria[i].x = 0;
+                        comp_seria[i].y = 0;
+                    }
+                    comp_shoot = false;
+                    seria = false;
+                    after_shoot(box, object, x, y);
+                    std::cout << "\nУбит\n";
+                    return 2;
+                }
+                else {
+                    box[x][y] = &hit;
+                    std::cout << "\nМимо\n";
+                    return 0;
+                }
+
+            }
+            if (seria > 1) {
+                bool check = false;
+                check_attack(box, comp_seria[seria - 1].x, comp_seria[seria - 1].y, &shoot_sides_last);
+                lock_sides();
+                if (!shoot_sides_last.down && !shoot_sides_last.left && !shoot_sides_last.right && !shoot_sides_last.up) {
+                    check_attack(box, comp_seria[0].x, comp_seria[0].y, &shoot_sides_first);
+                    lock_sides();
+                    check = true;
+                }
+                if (check) {
+                    short choice = rand() % 4 + 1;
+                    if ((choice == 1 && !shoot_sides_first.up) || (choice == 2 && !shoot_sides_first.down) || (choice == 3 && !shoot_sides_first.right) || (choice == 4 && !shoot_sides_first.left)) {
+                        while ((choice == 1 && !shoot_sides_first.up) || (choice == 2 && !shoot_sides_first.down) || (choice == 3 && !shoot_sides_first.right) || (choice == 4 && !shoot_sides_first.left)) {
+                            choice += 1;
+                            if (choice > 4) {
+                                choice = 1;
+                            }
+                        }
+                    }
+                    if (choice == 1 && shoot_sides_first.up) {
+                        x = comp_seria[0].x - 1;
+                        y = comp_seria[0].y;
+                    }
+                    if (choice == 2 && shoot_sides_first.down) {
+                        x = comp_seria[0].x + 1;
+                        y = comp_seria[0].y;
+                    }
+                    if (choice == 3 && shoot_sides_first.right) {
+                        x = comp_seria[0].x;
+                        y = comp_seria[0].y + 1;
+                    }
+                    if (choice == 4 && shoot_sides_first.left) {
+                        x = comp_seria[0].x;
+                        y = comp_seria[0].y - 1;
+                    }
+                    prefire(y, x);
+                    short kick = object->shoot(box[x][y]);
+                    if (kick == 1) {
+                        comp_seria[seria].x = x;
+                        comp_seria[seria].y = y;
+                        comp_shoot = true;
+                        seria += 1;
+                        after_shoot(box, object, x, y);
+                        std::cout << "\nРанен\n";
+                        return 1;
+                    }
+                    if (kick == 2) {
+                        for (short i = 0; i < 4; i++) {
+                            comp_seria[i].x = 0;
+                            comp_seria[i].y = 0;
+                        }
+                        comp_shoot = false;
+                        seria = false;
+                        after_shoot(box, object, x, y);
+                        std::cout << "\nУбит\n";
+                        return 2;
+                    }
+                    else {
+                        box[x][y] = &hit;
+                        std::cout << "\nМимо\n";
+                        return 0;
+                    }
+                }
+                else {
+                    short choice = rand() % 4 + 1;
+                    if ((choice == 1 && !shoot_sides_last.up) || (choice == 2 && !shoot_sides_last.down) || (choice == 3 && !shoot_sides_last.right) || (choice == 4 && !shoot_sides_last.left)) {
+                        while ((choice == 1 && !shoot_sides_last.up) || (choice == 2 && !shoot_sides_last.down) || (choice == 3 && !shoot_sides_last.right) || (choice == 4 && !shoot_sides_last.left)) {
+                            choice += 1;
+                            if (choice > 4) {
+                                choice = 1;
+                            }
+                        }
+                    }
+                    if (choice == 1 && shoot_sides_last.up) {
+                        x = comp_seria[seria - 1].x - 1;
+                        y = comp_seria[seria - 1].y;
+                    }
+                    if (choice == 2 && shoot_sides_last.down) {
+                        x = comp_seria[seria - 1].x + 1;
+                        y = comp_seria[seria - 1].y;
+                    }
+                    if (choice == 3 && shoot_sides_last.right) {
+                        x = comp_seria[seria - 1].x;
+                        y = comp_seria[seria - 1].y + 1;
+                    }
+                    if (choice == 4 && shoot_sides_last.left) {
+                        x = comp_seria[seria - 1].x;
+                        y = comp_seria[seria - 1].y - 1;
+                    }
+                    prefire(y, x);
+                    short kick = object->shoot(box[x][y]);
+                    if (kick == 1) {
+                        comp_seria[seria].x = x;
+                        comp_seria[seria].y = y;
+                        comp_shoot = true;
+                        seria += 1;
+                        after_shoot(box, object, x, y);
+                        std::cout << "\nРанен\n";
+                        return 1;
+                    }
+                    if (kick == 2) {
+                        for (short i = 0; i < 4; i++) {
+                            comp_seria[i].x = 0;
+                            comp_seria[i].y = 0;
+                        }
+                        comp_shoot = false;
+                        seria = false;
+                        after_shoot(box, object, x, y);
+                        std::cout << "\nУбит\n";
+                        return 2;
+                    }
+                    else {
+                        box[x][y] = &hit;
+                        std::cout << "\nМимо\n";
+                        return 0;
+                    }
+                }
+            }
+        }
     }
 
     // Выстрел
+    // 0 - ранил
+    // 1 - повторно попал в корабль 
+    // 2 - или уже стрелял или рядом с уничтоженным кораблем
+    // 3 - мимо
+    // 4 - уничтожен
     short shoot(bool*** box, Ship_complect* object, short x, char z) {
         short y = Transformation(z);
         short check = object->shoot(box[x][y]);
-        if ((check == 1 || check == 2) && box[x][y] != &hit) {
+        if ((check == 1) && box[x][y] != &hit) {
             after_shoot(box, object, x, y);
             return 0;
         }
-        if (*box[x][y] && box[x][y] != &hit) {
+        if (check == 2 && box[x][y] != &hit) {
+            after_shoot(box, object, x, y);
+            return 4;
+        }
+        if (check == 3) {
             std::cout << "Уже уничтожен\n";
             return 1;
         }
@@ -1433,29 +1951,107 @@ public:
             std::cout << "Мимо...\n";
             return 3;
         }
+
+    }
+
+
+    void canc_placement(bool*** box, Ship_complect* object) {
+        delete object->Four_D;
+        delete object->Three_D_1;
+        delete object->Three_D_2;
+        delete object->Two_D_1;
+        delete object->Two_D_2;
+        delete object->Two_D_3;
+        delete object->Single_D_1;
+        delete object->Single_D_2;
+        delete object->Single_D_3;
+        delete object->Single_D_4;
+        for (short i = 0; i < box_size; i++) {
+            for (short j = 0; j < box_size; j++) {
+                box[i][j] = nullptr;
+            }
+        }
+    }
+
+    bool check_condition(Ship_complect* object) {
+        if (object->Four_D->check_condition()) {
+            return false;
+        }
+        else {
+            if (object->Three_D_1->check_condition()) {
+                return false;
+            }
+            else {
+                if (object->Three_D_2->check_condition()) {
+                    return false;
+                }
+                else {
+                    if (object->Two_D_1->check_condition()) {
+                        return false;
+                    }
+                    else {
+                        if (object->Two_D_2->check_condition()) {
+                            return false;
+                        }
+                        else {
+                            if (object->Two_D_3->check_condition()) {
+                                return false;
+                            }
+                            else {
+                                if (object->Single_D_1->check_condition()) {
+                                    return false;
+                                }
+                                else {
+                                    if (object->Single_D_2->check_condition()) {
+                                        return false;
+                                    }
+                                    else {
+                                        if (object->Single_D_3->check_condition()) {
+                                            return false;
+                                        }
+                                        else {
+                                            if (object->Single_D_4->check_condition()) {
+                                                return false;
+                                            }
+                                            else {
+                                                return true;
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
     }
 
     ~Sea_Battle() {
-        delete[] player.Four_D;
-        delete[] player.Three_D_1;
-        delete[] player.Three_D_2;
-        delete[] player.Two_D_1;
-        delete[] player.Two_D_2;
-        delete[] player.Two_D_3;
-        delete[] player.Single_D_1;
-        delete[] player.Single_D_2;
-        delete[] player.Single_D_3;
-        delete[] player.Single_D_4;
-        delete[] computer.Four_D;
-        delete[] computer.Three_D_1;
-        delete[] computer.Three_D_2;
-        delete[] computer.Two_D_1;
-        delete[] computer.Two_D_2;
-        delete[] computer.Two_D_3;
-        delete[] computer.Single_D_1;
-        delete[] computer.Single_D_2;
-        delete[] computer.Single_D_3;
-        delete[] computer.Single_D_4;
+        if (player.complect_condition) {
+            delete player.Four_D;
+            delete player.Three_D_1;
+            delete player.Three_D_2;
+            delete player.Two_D_1;
+            delete player.Two_D_2;
+            delete player.Two_D_3;
+            delete player.Single_D_1;
+            delete player.Single_D_2;
+            delete player.Single_D_3;
+            delete player.Single_D_4;
+        }
+        if (computer.complect_condition) {
+            delete computer.Four_D;
+            delete computer.Three_D_1;
+            delete computer.Three_D_2;
+            delete computer.Two_D_1;
+            delete computer.Two_D_2;
+            delete computer.Two_D_3;
+            delete computer.Single_D_1;
+            delete computer.Single_D_2;
+            delete computer.Single_D_3;
+            delete computer.Single_D_4;
+        }
         for (short i = 0; i < box_size; i++) {
             delete[] Player_box[i];
             delete[] Comp_box[i];
@@ -1464,25 +2060,147 @@ public:
         delete[] Comp_box;
     }
 };
+short canc_choice(short x) {
+    if (x > 2 || x < 1) {
+        while (x > 2 || x < 1) {
+            std::cout << "Неверный ввод!!!\n- ";
+            std::cin >> x;
+        }
+    }
+    return x;
+}
+
+void Main_menu() {
+    print_line(1);
+    std::cout << "|\t\t\t\tМеню\t\t\t\t |\n";
+    print_line(1);
+    std::cout << "|\t 1 - начать новую игру с автоматической расстановкой\t |\n";
+    print_line(1);
+    std::cout << "|\t 2 - самостоятельно расставить корабли\t\t\t |\n";
+    print_line(1);
+}
+
+char shoot() {
+    char y = ' ';
+    std::cout << "Введите букву A - J\n- ";
+    std::cin >> y;
+    short z = Transformation(y);
+    if (z > 9 || z < 0) {
+        while (z > 9 || z < 0) {
+            std::cout << "Неверный ввод\nВведите букву A - J\n- ";
+            std::cin >> y;
+            short z = Transformation(y);
+            std::cout << z;
+            if (z >= 0 && z <= 9) {
+                break;
+            }
+        }
+    }
+    std::cout << "Введите цифру от 0 - 9\n- ";
+    return y;
+}
 
 int main()
 {
-    Sea_Battle Play;
-    std::cout << "Size" << sizeof(Play) << std::endl;
-    Play.Auto_placement(Play.Get_pl_box(), Play.Get_complect_pl());
-    std::cout << "Size" << sizeof(Play) << std::endl;
-    Play.box_out(Play.Get_pl_box());
     setlocale(LC_ALL, "Russian");
-    for (short i = 0; i < 5; i++) {
-        char z;
-        short x;
-        std::cout << "Введите букву A - J - ";
-        std::cin >> z;
-        std::cout << "Введите цифру 0 - 9 - ";
-        std::cin >> x;
-        Play.shoot(Play.Get_pl_box(), Play.Get_complect_pl(), x, z);
+    Sea_Battle Play;
+    Main_menu();
+    short choice = 0;
+    std::cout << "- ";
+    std::cin >> choice;
+    choice = canc_choice(choice);
+    if (choice == 1) {
+        Play.Auto_placement(Play.Get_pl_box(), Play.Get_complect_pl());
         Play.box_out(Play.Get_pl_box());
+        std::cout << "Оставить?\n1 - да\n2 - нет\n- ";
+        std::cin >> choice;
+        choice = canc_choice(choice);
+        if (choice == 2) {
+            while (choice == 2) {
+                Play.canc_placement(Play.Get_pl_box(), Play.Get_complect_pl());
+                Play.Auto_placement(Play.Get_pl_box(), Play.Get_complect_pl());
+                Play.box_out(Play.Get_pl_box());
+                std::cout << "Оставить?\n1 - да\n2 - нет\n- ";
+                std::cin >> choice;
+                choice = canc_choice(choice);
+            }
+        }
     }
-    
+    else {
+        Play.box_out(Play.Get_pl_box());
+        Play.Placement();
+        Play.box_out(Play.Get_pl_box());
+        std::cout << "Оставить?\n1 - да\n2 - нет\n- ";
+        std::cin >> choice;
+        choice = canc_choice(choice);
+        if (choice == 2) {
+            while (choice == 2) {
+                Play.box_out(Play.Get_pl_box());
+                Play.canc_placement(Play.Get_pl_box(), Play.Get_complect_pl());
+                Play.Placement();
+                Play.box_out(Play.Get_pl_box());
+                std::cout << "Оставить?\n1 - да\n2 - нет\n- ";
+                std::cin >> choice;
+                choice = canc_choice(choice);
+            }
+        }
+    }
+    Play.Auto_placement(Play.Get_comp_box(), Play.Get_complect_comp());
+    short step = 0;
+    while (!Play.check_condition(Play.Get_complect_comp()) && !Play.check_condition(Play.Get_complect_pl())) {
+        Sleep(1000);
+        Play.box_out();
+        short x;
+        char y;
+        y = shoot();
+        std::cin >> x;
+        if (x > 9 || x < 0) {
+            while (x < 0 || x > 9) {
+                std::cout << "Неверный ввод\nВведите цифру 0 - 9\n- ";
+                std::cin >> x;
+            }
+        }
+        std::cout << "\n" << x << "\n" << y << "\n";
+        short check = Play.shoot(Play.Get_comp_box(), Play.Get_complect_comp(), x, y);
+        sleep_out();
+        while(check == 0 || check == 4) {
+            if (check == 4) {
+                if (Play.check_condition(Play.Get_complect_comp())) {
+                    std::cout << "\nВы победили!!!\nКолличество ходов - " << step << std::endl;
+                    break;
+                }
+            }
+            Sleep(700);
+            Play.box_out();
+            y = shoot();
+            std::cin >> x;
+            if (x > 9 || x < 0) {
+                while (x < 0 || x > 9) {
+                    std::cout << "Неверный ввод\nВведите цифру 0 - 9\n- ";
+                    std::cin >> x;
+                }
+            }
+            check = Play.shoot(Play.Get_comp_box(), Play.Get_complect_comp(), x, y);
+        }
+        if (!Play.check_condition(Play.Get_complect_comp())) {
+            Play.box_out();
+            check = Play.computer_shoot(Play.Get_pl_box(), Play.Get_complect_pl());
+            while (check == 1 || check == 2) {
+                if (check == 4) {
+                    if (Play.check_condition(Play.Get_complect_comp())) {
+                        std::cout << "\nВы проиграли!!!\nКолличество ходов - " << step << std::endl ;
+                        break;
+                    }
+                }
+                check = Play.computer_shoot(Play.Get_pl_box(), Play.Get_complect_pl());
+                if (check != 1 && check != 2) {
+                    break;
+                }
+            }
+        }
+        step += 1;
+    }
+
+    return 0;
 
 }
