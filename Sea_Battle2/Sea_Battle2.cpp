@@ -344,12 +344,103 @@ struct Ship_complect {
     }
 };
 
+struct Ship_node {
+    Ship* ship;
+    Ship_node* next;
+    
+    Ship_node(short size) {
+        ship = new Ship(size);
+        next = nullptr;
+    }
+    ~Ship_node() {
+        delete ship;
+    }
+};
+
+struct Ship_list {
+    Ship_node* first;
+    Ship_node* last;
+    Ship* Hitting;
+    bool complect_condition;
+
+    Ship_list() {
+        first = nullptr;
+        last = nullptr;
+        Hitting = nullptr;
+        complect_condition = false;
+    }
+
+    void Add_node(short size) {
+        if (first == nullptr) {
+            first = new Ship_node(size);
+            last = first;
+        }
+        else {
+            Ship_node *temp = new Ship_node(size);
+            last->next = temp;
+            last = temp;
+        }
+    }
+    
+    // Поиск конкретного корабля
+    // 1 - если ранил
+    // 2 - если убил
+    // 3 - если повторное попадание
+    // 0 - если мимо
+    short shoot(bool* coord) {
+        Ship_node* temp = first;
+        while (temp->next != nullptr) {
+            short kick = temp->ship->shoot(coord);
+            if (kick == 1 || kick == 2) {
+                Hitting = temp->ship;
+                return kick;
+            }
+            if (kick == 3) {
+                return kick;
+            }
+            else {
+                temp = temp->next;
+            }
+        }
+        short kick = temp->ship->shoot(coord);
+        if (kick == 1 || kick == 2) {
+            Hitting = temp->ship;
+            return kick;
+        }
+        if (kick == 3) {
+            sleep_out();
+            std::cout << "\nУже было попадание\n";
+            sleep_out();
+            return kick;
+        }
+        else {
+            sleep_out();
+            std::cout << "\nМимо\n";
+            sleep_out();
+            return kick;
+        }
+    }
+
+    ~Ship_list() {
+        Ship_node* temp = first->next; 
+        while (first != nullptr) {
+            delete first;
+            first = temp;
+            if (first != nullptr) {
+                temp = first->next;
+            }
+        }
+    }
+};
+
 class Sea_Battle {
 private:
     bool*** Player_box;
     bool*** Comp_box;
     Ship_complect player;
     Ship_complect computer;
+    Ship_list gamer;
+    Ship_list comp;
     // для хранения координат пораженного корабля
     Coord comp_seria[4];
 
@@ -392,12 +483,20 @@ public:
         return &player;
     }
 
+
+
     bool*** Get_pl_box() {
         return Player_box;
     }
 
     bool*** Get_comp_box() {
         return Comp_box;
+    }
+    Ship_list* Get_list_gamer () {
+        return &gamer;
+    }
+    Ship_list* Get_list_comp() {
+        return &comp;
     }
 
     void box_out() {
@@ -908,9 +1007,135 @@ public:
         }
     }
     
+    // Ручная расстановка кораблей игрока список
+    void Placement(short a) {
+        bool up = false;
+        bool down = false;
+        bool right = false;
+        bool left = false;
+        bool* up_ref = &up;
+        bool* down_ref = &down;
+        bool* right_ref = &right;
+        bool* left_ref = &left;
+        short x = 0, y = 0;
+        char z = ' ';
+        short Ch = 0;
+        for (short i = 0, c = 4; i < 10; i++) {
+            if (i == 1 || i == 3 || i == 6) {
+                c -= 1;
+            }
+            std::cout << "Установите " << c << " палубный корабль:\nВведите букву A - J - ";
+            std::cin >> z;
+            y = Transformation(z);
+            if (y == -1) {
+                while (y == -1) {
+                    std::cout << "Неверный ввод.\nВведите букву A - J - ";
+                    std::cin >> z;
+                    y = Transformation(z);
+                }
+            }
+            std::cout << "Введите цифру 0 - 9 - ";
+            std::cin >> x;
+            gamer.Add_node(c);
+            Check_sides(x, y, gamer.last->ship->adress(0), gamer.last->ship->get_size(), up_ref, down_ref, left_ref, right_ref, Player_box);
+            if (!up && !down && !right && !left) {
+                while (!up && !down && !right && !left) {
+                    std::cout << "Невозможно установить корабль!\nВведите букву A - J - ";
+                    std::cin >> z;
+                    y = Transformation(z);
+                    std::cout << "Введите цифру 0 - 9 - ";
+                    std::cin >> x;
+                    Check_sides(x, y, gamer.last->ship->adress(0), gamer.last->ship->get_size(), up_ref, down_ref, left_ref, right_ref, Player_box);
+                }
+            }
+            gamer.last->ship->set_start(x, y);
+            Player_box[x][y] = gamer.last->ship->adress(0);
+            if (gamer.last->ship->get_size() > 1) {
+                Check_sides(x, y, gamer.last->ship->adress(0), gamer.last->ship->get_size(), up_ref, down_ref, left_ref, right_ref, Player_box);
+                Menu_placement(up, down, right, left);
+                std::cin >> Ch;
+                if ((!up && Ch == 1) || (!down && Ch == 2) || (!left && Ch == 3) || (!right && Ch == 4) || Ch < 1 || Ch > 4) {
+                    while ((!up && Ch == 1) || (!down && Ch == 2) || (!left && Ch == 3) || (!right && Ch == 4) || Ch < 1 || Ch > 4) {
+                        std::cout << "Неверное направление\n- ";
+                        std::cin >> Ch;
+                    }
+                }
+                Placement_P(x, y, gamer.last->ship->get_size(), gamer.last->ship, Ch, Player_box);
+            }
+            else {
+                gamer.last->ship->set_end(x, y);
+            }
+            box_out(Player_box);
+        }
+        gamer.complect_condition = true;
+    }
+
+    // Автоматическая расстановка любых кораблей список
+    void Auto_placement(bool*** box, Ship_list* object) {
+        srand(time(0));
+        short x = rand() % 10;
+        short y = rand() % 10;
+        short Ch = 0;
+        Sides sides;
+        for (short i = 0, c = 4; i < 10; i++) {
+            if (i == 1 || i == 3 || i == 6) {
+                c -= 1;
+            }
+            object->Add_node(c);
+            Check_sides(x, y, object->last->ship->adress(0), object->last->ship->get_size(), &sides.up, &sides.down, &sides.left, &sides.right, box);
+            if (c > 1) {
+                if (!sides.up && !sides.down && !sides.right && !sides.left) {
+                    while (!sides.up && !sides.down && !sides.right && !sides.left) {
+                        y += 1;
+                        if (y > 9) {
+                            y = 0;
+                            x += 1;
+                            if (x > 9) {
+                                x = 0;
+                            }
+                        }
+                        Check_sides(x, y, object->last->ship->adress(0), object->last->ship->get_size(), &sides.up, &sides.down, &sides.left, &sides.right, box);
+                    }
+                }
+            }
+            else {
+                if (!sides.up) {
+                    while (!sides.up) {
+                        y += 1;
+                        if (y > 9) {
+                            y = 0;
+                            x += 1;
+                            if (x > 9) {
+                                x = 0;
+                            }
+                        }
+                        Check_sides(x, y, object->last->ship->adress(0), object->last->ship->get_size(), &sides.up, &sides.down, &sides.left, &sides.right, box);
+                    }
+                }
+            }
+            box[x][y] = object->last->ship->adress(0);
+            object->last->ship->set_start(x, y);
+            if (c > 1) {
+                Ch = rand() % 4 + 1;
+                if ((!sides.up && Ch == 1) || (!sides.down && Ch == 2) || (!sides.left && Ch == 3) || (!sides.right && Ch == 4) || Ch < 1 || Ch > 4) {
+                    while ((!sides.up && Ch == 1) || (!sides.down && Ch == 2) || (!sides.left && Ch == 3) || (!sides.right && Ch == 4) || Ch < 1 || Ch > 4) {
+                        Ch += 1;
+                        if (Ch > 4) {
+                            Ch = 1;
+                        }
+                    }
+                }
+                Placement_P(x, y, object->last->ship->get_size(), object->last->ship, Ch, box);
+            }
+            else {
+                object->last->ship->set_end(x, y);
+            }
+        }
+        object->complect_condition = true;
+    }
+
     // Ручная расстановка кораблей игрока
     void  Placement() {
-        setlocale(LC_ALL, "Russian");
         bool up = false;
         bool down = false;
         bool right = false;
@@ -1523,7 +1748,7 @@ public:
     }
 
     // для обведения уничтоженного корабля
-    void after_kill(bool*** box, Ship_complect* object, short x, short y)
+    void after_kill(bool*** box,/* Ship_complect* object*/ short x, short y)
     {
         if (x == 0 && y == 0) {
             for (short i = x; i < x + 2; i++) {
@@ -1618,11 +1843,11 @@ public:
     }
     
     // для обведения подбитой клетки
-    void after_shoot(bool*** box, Ship_complect* object, short x, short y) {
+    void after_shoot(bool*** box, Ship_list* object, short x, short y) {
         if (!object->Hitting->get_condition()) {
-            after_kill(box, object, object->Hitting->get_start_x(), object->Hitting->get_start_y());
+            after_kill(box, /*object,*/ object->Hitting->get_start_x(), object->Hitting->get_start_y());
             if (object->Hitting->get_size() > 1) {
-                after_kill(box, object, object->Hitting->get_end_x(), object->Hitting->get_end_y());
+                after_kill(box,/* object,*/ object->Hitting->get_end_x(), object->Hitting->get_end_y());
             }
             return;
         }
@@ -1693,7 +1918,7 @@ public:
     // 0 - мимо
     // 1 - ранил
     // 2 - убил
-    short computer_shoot(bool*** box, Ship_complect* object) {
+    short computer_shoot(bool*** box, Ship_list* object) {
         static short seria = 0;
         short x = 0;
         short y = 0;
@@ -1722,7 +1947,6 @@ public:
                 comp_shoot = true;
                 seria += 1;
                 after_shoot(box, object, x, y);
-                std::cout << "\nРанен\n";
                 return 1;
             }
             if (kick == 2) {
@@ -1733,12 +1957,10 @@ public:
                 comp_shoot = false;
                 seria = false;
                 after_shoot(box, object, x, y);
-                std::cout << "\nУбит\n";
                 return 2;
             }
             else {
                 box[x][y] = &hit;
-                std::cout << "\nМимо\n";
                 return 0;
             }
 
@@ -1927,7 +2149,7 @@ public:
     // 2 - или уже стрелял или рядом с уничтоженным кораблем
     // 3 - мимо
     // 4 - уничтожен
-    short shoot(bool*** box, Ship_complect* object, short x, char z) {
+    short shoot(bool*** box, Ship_list* object, short x, char z) {
         short y = Transformation(z);
         short check = object->shoot(box[x][y]);
         if ((check == 1) && box[x][y] != &hit) {
@@ -1939,21 +2161,34 @@ public:
             return 4;
         }
         if (check == 3) {
-            std::cout << "Уже уничтожен\n";
             return 1;
         }
         if (box[x][y] == &hit) {
-            std::cout << "Рядом с кораблем\n";
-            return 2;
+             return 2;
         }
         else {
             box[x][y] = &hit;
-            std::cout << "Мимо...\n";
             return 3;
         }
 
     }
 
+    void canc_placement(bool*** box, Ship_list* object) {
+        Ship_node* temp = object->first->next;
+        while (temp != nullptr) {
+            delete object->first;
+            object->first = temp;
+            temp = object->first->next;
+        }
+        delete object->first;
+        object->first = nullptr;
+        object->last = nullptr;
+        for (short i = 0; i < box_size; i++) {
+            for (short j = 0; j < box_size; j++) {
+                box[i][j] = nullptr;
+            }
+        }
+    }
 
     void canc_placement(bool*** box, Ship_complect* object) {
         delete object->Four_D;
@@ -1971,6 +2206,17 @@ public:
                 box[i][j] = nullptr;
             }
         }
+    }
+
+    bool check_condition(Ship_list* object) {
+        Ship_node* temp = object->first;
+        while (temp != nullptr) {
+            if (temp->ship->check_condition()) {
+                return false;
+            }
+            temp = temp->next;
+        }       
+            return true;
     }
 
     bool check_condition(Ship_complect* object) {
@@ -2028,7 +2274,7 @@ public:
     }
 
     ~Sea_Battle() {
-        if (player.complect_condition) {
+        /*if (player.complect_condition) {
             delete player.Four_D;
             delete player.Three_D_1;
             delete player.Three_D_2;
@@ -2051,7 +2297,7 @@ public:
             delete computer.Single_D_2;
             delete computer.Single_D_3;
             delete computer.Single_D_4;
-        }
+        }*/
         for (short i = 0; i < box_size; i++) {
             delete[] Player_box[i];
             delete[] Comp_box[i];
@@ -2110,15 +2356,15 @@ int main()
     std::cin >> choice;
     choice = canc_choice(choice);
     if (choice == 1) {
-        Play.Auto_placement(Play.Get_pl_box(), Play.Get_complect_pl());
+        Play.Auto_placement(Play.Get_pl_box(), Play.Get_list_gamer());
         Play.box_out(Play.Get_pl_box());
         std::cout << "Оставить?\n1 - да\n2 - нет\n- ";
         std::cin >> choice;
         choice = canc_choice(choice);
         if (choice == 2) {
             while (choice == 2) {
-                Play.canc_placement(Play.Get_pl_box(), Play.Get_complect_pl());
-                Play.Auto_placement(Play.Get_pl_box(), Play.Get_complect_pl());
+                Play.canc_placement(Play.Get_pl_box(), Play.Get_list_gamer());
+                Play.Auto_placement(Play.Get_pl_box(), Play.Get_list_gamer());
                 Play.box_out(Play.Get_pl_box());
                 std::cout << "Оставить?\n1 - да\n2 - нет\n- ";
                 std::cin >> choice;
@@ -2128,7 +2374,7 @@ int main()
     }
     else {
         Play.box_out(Play.Get_pl_box());
-        Play.Placement();
+        Play.Placement(1);
         Play.box_out(Play.Get_pl_box());
         std::cout << "Оставить?\n1 - да\n2 - нет\n- ";
         std::cin >> choice;
@@ -2136,8 +2382,8 @@ int main()
         if (choice == 2) {
             while (choice == 2) {
                 Play.box_out(Play.Get_pl_box());
-                Play.canc_placement(Play.Get_pl_box(), Play.Get_complect_pl());
-                Play.Placement();
+                Play.canc_placement(Play.Get_pl_box(), Play.Get_list_gamer());
+                Play.Placement(1);
                 Play.box_out(Play.Get_pl_box());
                 std::cout << "Оставить?\n1 - да\n2 - нет\n- ";
                 std::cin >> choice;
@@ -2145,9 +2391,9 @@ int main()
             }
         }
     }
-    Play.Auto_placement(Play.Get_comp_box(), Play.Get_complect_comp());
+    Play.Auto_placement(Play.Get_comp_box(), Play.Get_list_comp());
     short step = 0;
-    while (!Play.check_condition(Play.Get_complect_comp()) && !Play.check_condition(Play.Get_complect_pl())) {
+    while (!Play.check_condition(Play.Get_list_comp()) || !Play.check_condition(Play.Get_list_gamer())) {
         Sleep(1000);
         Play.box_out();
         short x;
@@ -2160,14 +2406,12 @@ int main()
                 std::cin >> x;
             }
         }
-        std::cout << "\n" << x << "\n" << y << "\n";
-        short check = Play.shoot(Play.Get_comp_box(), Play.Get_complect_comp(), x, y);
-        sleep_out();
+        short check = Play.shoot(Play.Get_comp_box(), Play.Get_list_comp(), x, y);
         while(check == 0 || check == 4) {
             if (check == 4) {
-                if (Play.check_condition(Play.Get_complect_comp())) {
+                if (Play.check_condition(Play.Get_list_comp())) {
                     std::cout << "\nВы победили!!!\nКолличество ходов - " << step << std::endl;
-                    break;
+                    goto stop;
                 }
             }
             Sleep(700);
@@ -2180,19 +2424,19 @@ int main()
                     std::cin >> x;
                 }
             }
-            check = Play.shoot(Play.Get_comp_box(), Play.Get_complect_comp(), x, y);
+            check = Play.shoot(Play.Get_comp_box(), Play.Get_list_comp(), x, y);
         }
-        if (!Play.check_condition(Play.Get_complect_comp())) {
+        if (!Play.check_condition(Play.Get_list_comp())) {
             Play.box_out();
-            check = Play.computer_shoot(Play.Get_pl_box(), Play.Get_complect_pl());
+            check = Play.computer_shoot(Play.Get_pl_box(), Play.Get_list_gamer());
             while (check == 1 || check == 2) {
-                if (check == 4) {
-                    if (Play.check_condition(Play.Get_complect_comp())) {
+                if (check == 2) {
+                    if (Play.check_condition(Play.Get_list_gamer())) {
                         std::cout << "\nВы проиграли!!!\nКолличество ходов - " << step << std::endl ;
-                        break;
+                        goto stop;
                     }
                 }
-                check = Play.computer_shoot(Play.Get_pl_box(), Play.Get_complect_pl());
+                check = Play.computer_shoot(Play.Get_pl_box(), Play.Get_list_gamer());
                 if (check != 1 && check != 2) {
                     break;
                 }
@@ -2200,7 +2444,7 @@ int main()
         }
         step += 1;
     }
-
+    stop:
     return 0;
 
 }
